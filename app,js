@@ -1,0 +1,49 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+
+const app = express();
+const port = 3000;
+
+// Conecta a MongoDB
+mongoose.connect('mongodb://localhost:27017/tu_basede_datos', { useNewUrlParser: true, useUnifiedTopology: true });
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'Error de conexión a MongoDB:'));
+db.once('open', () => {
+  console.log('Conectado a MongoDB');
+});
+
+app.use(express.json());
+
+// Ruta de registro de usuario
+app.post('/registro', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Hash de la contraseña antes de almacenarla
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Crea un nuevo usuario en la base de datos
+    const usuario = new Usuario({
+      username,
+      password: hashedPassword
+    });
+
+    await usuario.save();
+
+    res.status(201).json({ mensaje: 'Usuario registrado con éxito' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+// Modelo de Usuario
+const Usuario = mongoose.model('Usuario', {
+  username: String,
+  password: String
+});
+
+app.listen(port, () => {
+  console.log(`El servidor está escuchando en http://localhost:${port}`);
+});
